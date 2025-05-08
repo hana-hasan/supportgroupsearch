@@ -7,15 +7,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/client'));
 
-// MongoDB connection - replace with your own connection string
-// For local MongoDB: mongodb://localhost:27017/events-db
-// For MongoDB Atlas: mongodb+srv://<username>:<password>@cluster0.example.mongodb.net/events-db
-const mongoURI = process.env.MONGODB_URI || "mongodb://localhost:27017/events-db";
+// MongoDB connection - Azure Cosmos DB
+const mongoURI = process.env.MONGODB_URI || "mongodb+srv://hanah:<Password123!>@capstone-cluster.global.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000";
 
-// Connect to MongoDB
-mongoose.connect(mongoURI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// Connect to MongoDB with proper options
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  retryWrites: false,
+  maxIdleTimeMS: 120000
+})
+  .then(() => console.log('Connected to Azure Cosmos DB'))
+  .catch(err => {
+    console.error('Azure Cosmos DB connection error:', err);
+    process.exit(1); // Exit if we can't connect to the database
+  });
 
 // Create an Event schema and model
 const eventSchema = new mongoose.Schema({
