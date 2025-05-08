@@ -20,6 +20,11 @@
             </div>
             
             <div class="form-group">
+                <label for="event-date">Date</label>
+                <input type="date" id="event-date" required min="">
+            </div>
+            
+            <div class="form-group">
                 <label>Address</label>
                 <div class="address-group">
                     <div>
@@ -113,6 +118,15 @@
                     </select>
                 </div>
             </div>
+
+            <div class="form-group">
+                <label for="event-tags">Tags</label>
+                <div class="tags-input-container">
+                    <input type="text" id="event-tags" placeholder="Enter tags (comma-separated, e.g., AA, Bereavement)">
+                    <div id="tags-preview" class="tags-preview"></div>
+                </div>
+                <small class="help-text">Add tags to help others find your event (e.g., AA, Bereavement, Grief Support)</small>
+            </div>
             
             <button type="submit">Create Event</button>
         </form>
@@ -126,6 +140,7 @@
         const eventForm = document.getElementById('event-form');
         const eventNameInput = document.getElementById('event-name');
         const eventDescriptionInput = document.getElementById('event-description');
+        const eventDateInput = document.getElementById('event-date');
         const streetAddressInput = document.getElementById('street-address');
         const cityInput = document.getElementById('city');
         const stateInput = document.getElementById('state');
@@ -133,7 +148,23 @@
         const eventTimeInput = document.getElementById('event-time');
         const timePeriodSelect = document.getElementById('time-period');
         const timezoneSelect = document.getElementById('timezone');
+        const eventTagsInput = document.getElementById('event-tags');
+        const tagsPreview = document.getElementById('tags-preview');
         const formError = document.getElementById('form-error');
+
+        // Set minimum date to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowFormatted = tomorrow.toISOString().split('T')[0];
+        eventDateInput.min = tomorrowFormatted;
+
+        // Handle tags input
+        eventTagsInput.addEventListener('input', function() {
+            const tags = this.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+            tagsPreview.innerHTML = tags.map(tag => 
+                `<span class="tag">${tag}</span>`
+            ).join('');
+        });
 
         // Handle form submission
         eventForm.addEventListener('submit', function(e) {
@@ -141,15 +172,26 @@
             
             const name = eventNameInput.value.trim();
             const description = eventDescriptionInput.value.trim();
+            const date = eventDateInput.value;
             
+            // Date validation
+            const selectedDate = new Date(date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (selectedDate < today) {
+                formError.textContent = 'Please select a future date';
+                return;
+            }
+
             // Address validation
             const streetAddress = streetAddressInput.value.trim();
             const city = cityInput.value.trim();
             const state = stateInput.value;
             const zip = zipInput.value.trim();
             
-            if (!name || !description || !streetAddress || !city || !state || !zip) {
-                formError.textContent = 'Please fill out all fields';
+            if (!name || !description || !date || !streetAddress || !city || !state || !zip) {
+                formError.textContent = 'Please fill out all required fields';
                 return;
             }
 
@@ -162,7 +204,7 @@
             const timezone = timezoneSelect.value;
             
             if (!time) {
-                formError.textContent = 'Please fill out all fields';
+                formError.textContent = 'Please fill out all required fields';
                 return;
             }
 
@@ -170,18 +212,31 @@
             const [hours, minutes] = time.split(':');
             const formattedTime = `${hours}:${minutes} ${period} ${timezone}`;
 
-            createEvent(name, description, address, formattedTime);
+            // Process tags
+            const tags = eventTagsInput.value.split(',')
+                .map(tag => tag.trim())
+                .filter(tag => tag);
+
+            createEvent(name, description, address, formattedTime, date, tags);
         });
 
         // Create a new event
-        async function createEvent(name, description, address, time) {
+        async function createEvent(name, description, address, time, date, tags) {
             try {
                 const response = await fetch('/api/events', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ name, description, address, time })
+                    body: JSON.stringify({ 
+                        name, 
+                        description, 
+                        address, 
+                        time, 
+                        date,
+                        tags,
+                        zipCode: document.getElementById('zip').value
+                    })
                 });
 
                 if (!response.ok) {

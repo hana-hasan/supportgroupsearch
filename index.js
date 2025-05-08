@@ -28,8 +28,15 @@ const eventSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String, required: true },
   address: { type: String, required: true },
+  zipCode: { type: String, required: true },
   time: { type: String, required: true },
-  date: { type: Date, default: Date.now }
+  date: { type: String, required: true },
+  timeRange: { 
+    type: String, 
+    required: true,
+    enum: ['morning', 'afternoon', 'evening']
+  },
+  tags: [{ type: String }]
 });
 
 const Event = mongoose.model('Event', eventSchema);
@@ -39,7 +46,42 @@ const port = process.env.PORT || 3000;
 // Route to get all events
 app.get('/api/events', async function(request, response) {
   try {
-    const events = await Event.find().sort({ date: -1 });
+    const { 
+      startDate, 
+      endDate, 
+      zipCode, 
+      timeRange, 
+      tags 
+    } = request.query;
+
+    // Build filter object
+    const filter = {};
+
+    // Date range filter
+    if (startDate && endDate) {
+      filter.date = {
+        $gte: startDate,
+        $lte: endDate
+      };
+    }
+
+    // Zip code filter
+    if (zipCode) {
+      filter.zipCode = zipCode;
+    }
+
+    // Time range filter
+    if (timeRange) {
+      filter.timeRange = timeRange;
+    }
+
+    // Tags filter
+    if (tags) {
+      const tagArray = tags.split(',');
+      filter.tags = { $in: tagArray };
+    }
+
+    const events = await Event.find(filter).sort({ date: -1 });
     response.json(events);
   } catch (err) {
     console.error('Error fetching events:', err);
@@ -59,8 +101,11 @@ app.post('/api/events', async function(request, response) {
       name: request.body.name,
       description: request.body.description,
       address: request.body.address,
+      zipCode: request.body.zipCode,
       time: request.body.time,
-      date: new Date()
+      date: request.body.date,
+      timeRange: request.body.timeRange,
+      tags: request.body.tags
     });
     
     const savedEvent = await newEvent.save();

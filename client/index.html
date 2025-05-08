@@ -1,7 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<title>Events Website</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Support Group Events</title>
+	<link rel="stylesheet" href="styles.css">
 	<style>
 		body {
 			font-family: Arial, sans-serif;
@@ -53,6 +56,20 @@
 		.delete-btn:hover {
 			background-color: #d32f2f;
 		}
+		.ical-btn {
+			position: absolute;
+			top: 10px;
+			right: 100px;
+			background-color: #2196F3;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			padding: 5px 10px;
+			cursor: pointer;
+		}
+		.ical-btn:hover {
+			background-color: #1976D2;
+		}
 		.error {
 			color: red;
 			margin-top: 5px;
@@ -60,16 +77,47 @@
 	</style>
 </head>
 <body>
-	<h1>Events Website</h1>
-	
-	<a href="/create-event.html" class="create-button">Create New Event</a>
-	
-	<h2>All Events</h2>
-	<div id="events-container">
-		<ul id="event-list" class="event-list">
-			<li>Loading events...</li>
-		</ul>
+	<div class="container">
+		<h1>Support Group Events</h1>
+		
+		<a href="/create-event.html" class="create-button">Create New Event</a>
+		
+		<!-- Filter Form -->
+		<div class="filter-section">
+			<h2>Filter Events</h2>
+			<form id="filterForm" class="filter-form">
+				<div class="form-group">
+					<label for="startDate">Start Date:</label>
+					<input type="date" id="startDate" name="startDate">
+				</div>
+				
+				<div class="form-group">
+					<label for="endDate">End Date:</label>
+					<input type="date" id="endDate" name="endDate">
+				</div>
+				
+				<div class="form-group">
+					<label for="zipCode">Zip Code:</label>
+					<input type="text" id="zipCode" name="zipCode" pattern="[0-9]{5}" placeholder="12345">
+				</div>
+				
+				<div class="form-group">
+					<label for="tags">Tags (comma-separated):</label>
+					<input type="text" id="tags" name="tags" placeholder="AA, Bereavement, etc.">
+				</div>
+				
+				<button type="submit" class="filter-button">Apply Filters</button>
+				<button type="reset" class="reset-button">Reset Filters</button>
+			</form>
+		</div>
+
+		<!-- Events Container -->
+		<div id="eventsContainer" class="events-container">
+			<!-- Events will be dynamically inserted here -->
+		</div>
 	</div>
+
+	<script src="filter-events.js"></script>
 
 	<script>
 		// DOM elements
@@ -105,8 +153,9 @@
 						<p><strong>Description:</strong> ${event.description || 'No description provided'}</p>
 						<p><strong>Address:</strong> ${event.address || 'No address provided'}</p>
 						<p><strong>Time:</strong> ${event.time || 'No time provided'}</p>
-						<p><strong>Created:</strong> ${new Date(event.date).toLocaleString()}</p>
+						<p><strong>Date:</strong> ${event.date || 'No date provided'}</p>
 					</div>
+					<button class="ical-btn" onclick="downloadICS('${event._id}', '${event.name}', '${event.description}', '${event.address}', '${event.date}', '${event.time}')">Add to iCal</button>
 					<button class="delete-btn" onclick="deleteEvent('${event._id}')">Delete</button>
 				</li>
 			`).join('');
@@ -133,6 +182,43 @@
 				console.error('Error deleting event:', error);
 				alert('Failed to delete event. Please try again.');
 			}
+		}
+
+		// Generate and download ICS file
+		function downloadICS(id, name, description, address, date, time) {
+			// Format date and time for ICS
+			const [year, month, day] = date.split('-');
+			const [hours, minutes] = time.split(':');
+			const [timeValue, period, timezone] = time.split(' ');
+			
+			// Convert to 24-hour format
+			let hour24 = parseInt(hours);
+			if (period === 'PM' && hour24 !== 12) hour24 += 12;
+			if (period === 'AM' && hour24 === 12) hour24 = 0;
+			
+			// Create ICS content
+			const icsContent = [
+				'BEGIN:VCALENDAR',
+				'VERSION:2.0',
+				'PRODID:-//Support Group Search//Event Calendar//EN',
+				'BEGIN:VEVENT',
+				`DTSTART:${year}${month}${day}T${hour24.toString().padStart(2, '0')}${minutes}00`,
+				`DTEND:${year}${month}${day}T${(hour24 + 1).toString().padStart(2, '0')}${minutes}00`,
+				`SUMMARY:${name}`,
+				`DESCRIPTION:${description}`,
+				`LOCATION:${address}`,
+				'END:VEVENT',
+				'END:VCALENDAR'
+			].join('\r\n');
+
+			// Create blob and download
+			const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+			const link = document.createElement('a');
+			link.href = window.URL.createObjectURL(blob);
+			link.setAttribute('download', `${name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.ics`);
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
 		}
 	</script>
 </body>
