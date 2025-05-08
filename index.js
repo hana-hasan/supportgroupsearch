@@ -8,7 +8,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/client'));
 
 // MongoDB connection - Azure Cosmos DB
-const mongoURI = process.env.MONGODB_URI || "mongodb+srv://hanah:<Password123!>@capstone-cluster.global.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000";
+const mongoURI = process.env.MONGODB_URI || "mongodb+srv://hanah:Password123!@capstone-cluster.global.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000";
 
 // Connect to MongoDB with proper options
 mongoose.connect(mongoURI, {
