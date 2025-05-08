@@ -2,67 +2,7 @@
 <html>
 <head>
     <title>Create New Event</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        h1 {
-            color: #333;
-        }
-        .form-container {
-            background-color: #f5f5f5;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input, textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        button {
-            padding: 10px 15px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .error {
-            color: red;
-            margin-top: 5px;
-        }
-        .back-link {
-            display: inline-block;
-            margin-top: 20px;
-            color: #666;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <h1>Create New Event</h1>
@@ -80,13 +20,98 @@
             </div>
             
             <div class="form-group">
-                <label for="event-address">Address</label>
-                <input type="text" id="event-address" placeholder="Enter event address" required>
+                <label>Address</label>
+                <div class="address-group">
+                    <div>
+                        <label for="street-address">Street Address</label>
+                        <input type="text" id="street-address" placeholder="e.g., 123 Main St" required>
+                    </div>
+                    <div class="city-state-zip">
+                        <div>
+                            <label for="city">City</label>
+                            <input type="text" id="city" required>
+                        </div>
+                        <div>
+                            <label for="state">State</label>
+                            <select id="state" required>
+                                <option value="">Select State</option>
+                                <option value="AL">AL</option>
+                                <option value="AK">AK</option>
+                                <option value="AZ">AZ</option>
+                                <option value="AR">AR</option>
+                                <option value="CA">CA</option>
+                                <option value="CO">CO</option>
+                                <option value="CT">CT</option>
+                                <option value="DE">DE</option>
+                                <option value="FL">FL</option>
+                                <option value="GA">GA</option>
+                                <option value="HI">HI</option>
+                                <option value="ID">ID</option>
+                                <option value="IL">IL</option>
+                                <option value="IN">IN</option>
+                                <option value="IA">IA</option>
+                                <option value="KS">KS</option>
+                                <option value="KY">KY</option>
+                                <option value="LA">LA</option>
+                                <option value="ME">ME</option>
+                                <option value="MD">MD</option>
+                                <option value="MA">MA</option>
+                                <option value="MI">MI</option>
+                                <option value="MN">MN</option>
+                                <option value="MS">MS</option>
+                                <option value="MO">MO</option>
+                                <option value="MT">MT</option>
+                                <option value="NE">NE</option>
+                                <option value="NV">NV</option>
+                                <option value="NH">NH</option>
+                                <option value="NJ">NJ</option>
+                                <option value="NM">NM</option>
+                                <option value="NY">NY</option>
+                                <option value="NC">NC</option>
+                                <option value="ND">ND</option>
+                                <option value="OH">OH</option>
+                                <option value="OK">OK</option>
+                                <option value="OR">OR</option>
+                                <option value="PA">PA</option>
+                                <option value="RI">RI</option>
+                                <option value="SC">SC</option>
+                                <option value="SD">SD</option>
+                                <option value="TN">TN</option>
+                                <option value="TX">TX</option>
+                                <option value="UT">UT</option>
+                                <option value="VT">VT</option>
+                                <option value="VA">VA</option>
+                                <option value="WA">WA</option>
+                                <option value="WV">WV</option>
+                                <option value="WI">WI</option>
+                                <option value="WY">WY</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="zip">ZIP</label>
+                            <input type="text" id="zip" pattern="[0-9]{5}" title="Please enter a valid 5-digit ZIP code" required>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="form-group">
                 <label for="event-time">Time</label>
-                <input type="text" id="event-time" placeholder="e.g., 7:00 PM - 9:00 PM" required>
+                <div class="time-input-group">
+                    <input type="time" id="event-time" required>
+                    <select id="time-period" required>
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                    </select>
+                    <select id="timezone" required>
+                        <option value="EST">EST</option>
+                        <option value="CST">CST</option>
+                        <option value="MST">MST</option>
+                        <option value="PST">PST</option>
+                        <option value="AKST">AKST</option>
+                        <option value="HST">HST</option>
+                    </select>
+                </div>
             </div>
             
             <button type="submit">Create Event</button>
@@ -101,8 +126,13 @@
         const eventForm = document.getElementById('event-form');
         const eventNameInput = document.getElementById('event-name');
         const eventDescriptionInput = document.getElementById('event-description');
-        const eventAddressInput = document.getElementById('event-address');
+        const streetAddressInput = document.getElementById('street-address');
+        const cityInput = document.getElementById('city');
+        const stateInput = document.getElementById('state');
+        const zipInput = document.getElementById('zip');
         const eventTimeInput = document.getElementById('event-time');
+        const timePeriodSelect = document.getElementById('time-period');
+        const timezoneSelect = document.getElementById('timezone');
         const formError = document.getElementById('form-error');
 
         // Handle form submission
@@ -111,15 +141,36 @@
             
             const name = eventNameInput.value.trim();
             const description = eventDescriptionInput.value.trim();
-            const address = eventAddressInput.value.trim();
-            const time = eventTimeInput.value.trim();
             
-            if (!name || !description || !address || !time) {
+            // Address validation
+            const streetAddress = streetAddressInput.value.trim();
+            const city = cityInput.value.trim();
+            const state = stateInput.value;
+            const zip = zipInput.value.trim();
+            
+            if (!name || !description || !streetAddress || !city || !state || !zip) {
                 formError.textContent = 'Please fill out all fields';
                 return;
             }
 
-            createEvent(name, description, address, time);
+            // Format address
+            const address = `${streetAddress}, ${city}, ${state} ${zip}`;
+            
+            // Time validation
+            const time = eventTimeInput.value;
+            const period = timePeriodSelect.value;
+            const timezone = timezoneSelect.value;
+            
+            if (!time) {
+                formError.textContent = 'Please fill out all fields';
+                return;
+            }
+
+            // Format time string
+            const [hours, minutes] = time.split(':');
+            const formattedTime = `${hours}:${minutes} ${period} ${timezone}`;
+
+            createEvent(name, description, address, formattedTime);
         });
 
         // Create a new event
