@@ -19,9 +19,48 @@
                 <textarea id="event-description" placeholder="Enter event description" required></textarea>
             </div>
             
-            <div class="form-group">
-                <label for="event-date">Date</label>
-                <input type="date" id="event-date" required min="">
+            <div class="form-group date-time-group">
+                <div class="date-section">
+                    <label for="event-date">Date</label>
+                    <input type="date" id="event-date" required min="">
+                </div>
+                
+                <div class="time-section">
+                    <label for="event-time">Time</label>
+                    <div class="time-input-group">
+                        <select id="event-hour" required>
+                            <option value="">Hour</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                        </select>
+                        <select id="event-minute" required>
+                            <option value="00">00</option>
+                            <option value="30">30</option>
+                        </select>
+                        <select id="time-period" required>
+                            <option value="AM">AM</option>
+                            <option value="PM">PM</option>
+                        </select>
+                        <select id="timezone" required>
+                            <option value="EST">EST</option>
+                            <option value="CST">CST</option>
+                            <option value="MST">MST</option>
+                            <option value="PST">PST</option>
+                            <option value="AKST">AKST</option>
+                            <option value="HST">HST</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             
             <div class="form-group">
@@ -101,25 +140,6 @@
             </div>
             
             <div class="form-group">
-                <label for="event-time">Time</label>
-                <div class="time-input-group">
-                    <input type="time" id="event-time" required>
-                    <select id="time-period" required>
-                        <option value="AM">AM</option>
-                        <option value="PM">PM</option>
-                    </select>
-                    <select id="timezone" required>
-                        <option value="EST">EST</option>
-                        <option value="CST">CST</option>
-                        <option value="MST">MST</option>
-                        <option value="PST">PST</option>
-                        <option value="AKST">AKST</option>
-                        <option value="HST">HST</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-group">
                 <label for="event-tags">Tags</label>
                 <div class="tags-input-container">
                     <div class="existing-tags">
@@ -143,6 +163,30 @@
     
     <a href="/" class="back-link">← Back to Events</a>
 
+    <style>
+        .date-time-group {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        .date-section, .time-section {
+            flex: 1;
+        }
+        
+        .time-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .time-input-group select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+
     <script>
         // DOM elements
         const eventForm = document.getElementById('event-form');
@@ -153,9 +197,6 @@
         const cityInput = document.getElementById('city');
         const stateInput = document.getElementById('state');
         const zipInput = document.getElementById('zip');
-        const eventTimeInput = document.getElementById('event-time');
-        const timePeriodSelect = document.getElementById('time-period');
-        const timezoneSelect = document.getElementById('timezone');
         const formError = document.getElementById('form-error');
 
         // Set minimum date to tomorrow
@@ -251,82 +292,35 @@
         // Load tags when page loads
         loadExistingTags();
 
-        // Get time range based on time
-        function getTimeRange(time, period) {
-            const [hours] = time.split(':');
-            const hour = parseInt(hours);
-            
-            if (period === 'AM') {
-                if (hour >= 5 && hour < 12) return 'morning';
-            } else if (period === 'PM') {
-                if (hour === 12 || hour < 5) return 'afternoon';
-                if (hour >= 5) return 'evening';
-            }
-            return 'morning'; // default
-        }
+        const eventHourSelect = document.getElementById('event-hour');
+        const eventMinuteSelect = document.getElementById('event-minute');
+        const timePeriodSelect = document.getElementById('time-period');
+        const timezoneSelect = document.getElementById('timezone');
 
-        // Handle form submission
-        eventForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            formError.textContent = ''; // Clear previous errors
-            
-            const name = eventNameInput.value.trim();
-            const description = eventDescriptionInput.value.trim();
-            const date = eventDateInput.value;
-            
-            // Date validation
-            const selectedDate = new Date(date);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            if (selectedDate < today) {
-                formError.textContent = 'Please select a future date';
-                return;
-            }
-
-            // Address validation
-            const streetAddress = streetAddressInput.value.trim();
-            const city = cityInput.value.trim();
-            const state = stateInput.value;
-            const zip = zipInput.value.trim();
-            
-            if (!name || !description || !date || !streetAddress || !city || !state || !zip) {
-                formError.textContent = 'Please fill out all required fields';
-                return;
-            }
-
-            // Format address
-            const address = `${streetAddress}, ${city}, ${state} ${zip}`;
-            
-            // Time validation
-            const time = eventTimeInput.value;
+        // Function to format time for submission
+        function formatTimeForSubmission() {
+            const hour = eventHourSelect.value;
+            const minute = eventMinuteSelect.value;
             const period = timePeriodSelect.value;
             const timezone = timezoneSelect.value;
-            
-            if (!time) {
-                formError.textContent = 'Please fill out all required fields';
-                return;
-            }
+            return `${hour}:${minute} ${period} ${timezone}`;
+        }
 
-            // Format time string
-            const [hours, minutes] = time.split(':');
-            const formattedTime = `${hours}:${minutes} ${period} ${timezone}`;
-
-            const tags = Array.from(selectedTagsSet);
+        // Modify the form submission to use the new time format
+        eventForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
             
             const eventData = {
-                name,
-                description,
-                date,
-                address,
-                zipCode: zip,
-                time: formattedTime,
-                timeRange: getTimeRange(time, period),
-                tags
+                name: eventNameInput.value,
+                description: eventDescriptionInput.value,
+                date: eventDateInput.value,
+                time: formatTimeForSubmission(),
+                address: `${streetAddressInput.value}, ${cityInput.value}, ${stateInput.value} ${zipInput.value}`,
+                zipCode: zipInput.value,
+                tags: Array.from(selectedTagsSet)
             };
 
             try {
-                console.log('Submitting event data:', eventData); // Debug log
                 const response = await fetch('/api/events', {
                     method: 'POST',
                     headers: {
@@ -335,12 +329,10 @@
                     body: JSON.stringify(eventData)
                 });
 
-                const data = await response.json();
-                
                 if (response.ok) {
                     window.location.href = '/';
                 } else {
-                    console.error('Server error:', data); // Debug log
+                    const data = await response.json();
                     formError.textContent = data.message || 'Error creating event';
                 }
             } catch (error) {

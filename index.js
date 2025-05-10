@@ -22,10 +22,13 @@ mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   retryWrites: false,
-  maxIdleTimeMS: 30000,  // Reduced from 120000
-  serverSelectionTimeoutMS: 5000,
+  maxIdleTimeMS: 30000,
+  serverSelectionTimeoutMS: 30000,  // Increased from 5000 to 30000
   socketTimeoutMS: 45000,
-  connectTimeoutMS: 10000
+  connectTimeoutMS: 30000,  // Increased from 10000 to 30000
+  heartbeatFrequencyMS: 10000,
+  retryReads: true,
+  retryWrites: true
 })
   .then(() => console.log('Connected to Azure Cosmos DB'))
   .catch(err => {
