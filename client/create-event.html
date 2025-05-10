@@ -251,9 +251,24 @@
         // Load tags when page loads
         loadExistingTags();
 
+        // Get time range based on time
+        function getTimeRange(time, period) {
+            const [hours] = time.split(':');
+            const hour = parseInt(hours);
+            
+            if (period === 'AM') {
+                if (hour >= 5 && hour < 12) return 'morning';
+            } else if (period === 'PM') {
+                if (hour === 12 || hour < 5) return 'afternoon';
+                if (hour >= 5) return 'evening';
+            }
+            return 'morning'; // default
+        }
+
         // Handle form submission
         eventForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            formError.textContent = ''; // Clear previous errors
             
             const name = eventNameInput.value.trim();
             const description = eventDescriptionInput.value.trim();
@@ -305,12 +320,13 @@
                 date,
                 address,
                 zipCode: zip,
-                time: `${eventTimeInput.value} ${timePeriodSelect.value} ${timezoneSelect.value}`,
-                timeRange: getTimeRange(eventTimeInput.value, timePeriodSelect.value),
+                time: formattedTime,
+                timeRange: getTimeRange(time, period),
                 tags
             };
 
             try {
+                console.log('Submitting event data:', eventData); // Debug log
                 const response = await fetch('/api/events', {
                     method: 'POST',
                     headers: {
@@ -319,10 +335,12 @@
                     body: JSON.stringify(eventData)
                 });
 
+                const data = await response.json();
+                
                 if (response.ok) {
                     window.location.href = '/';
                 } else {
-                    const data = await response.json();
+                    console.error('Server error:', data); // Debug log
                     formError.textContent = data.message || 'Error creating event';
                 }
             } catch (error) {

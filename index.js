@@ -125,6 +125,19 @@ app.get('/create-event.html', function(request, response) {
 // Route to create a new event
 app.post('/api/events', async function(request, response) {
   try {
+    console.log('Received event creation request:', request.body); // Debug log
+    
+    // Validate required fields
+    const requiredFields = ['name', 'description', 'address', 'zipCode', 'time', 'date', 'timeRange'];
+    const missingFields = requiredFields.filter(field => !request.body[field]);
+    
+    if (missingFields.length > 0) {
+      console.error('Missing required fields:', missingFields);
+      return response.status(400).json({ 
+        message: `Missing required fields: ${missingFields.join(', ')}` 
+      });
+    }
+
     const newEvent = new Event({
       name: request.body.name,
       description: request.body.description,
@@ -133,14 +146,20 @@ app.post('/api/events', async function(request, response) {
       time: request.body.time,
       date: request.body.date,
       timeRange: request.body.timeRange,
-      tags: request.body.tags
+      tags: request.body.tags || []
     });
     
+    console.log('Creating new event:', newEvent); // Debug log
     const savedEvent = await newEvent.save();
+    console.log('Event created successfully:', savedEvent); // Debug log
+    
     response.status(201).json(savedEvent);
   } catch (err) {
     console.error('Error creating event:', err);
-    response.status(500).json({ message: 'Error creating event' });
+    response.status(500).json({ 
+      message: 'Error creating event',
+      error: err.message 
+    });
   }
 });
 
