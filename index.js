@@ -1,5 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const timeout = require('connect-timeout');
 const app = express();
 
 // Add body-parser middleware for handling JSON data
@@ -7,15 +8,24 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/client'));
 
+// Add timeout middleware
+app.use(timeout('30s'));
+app.use((req, res, next) => {
+  if (!req.timedout) next();
+});
+
 // MongoDB connection - Azure Cosmos DB
-const mongoURI = process.env.MONGODB_URI || "YOUR_NEW_CONNECTION_STRING_HERE";
+const mongoURI = process.env.MONGODB_URI || "mongodb+srv://hanah:Password123!@capstone-cluster.global.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000";
 
 // Connect to MongoDB with proper options
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   retryWrites: false,
-  maxIdleTimeMS: 120000
+  maxIdleTimeMS: 30000,  // Reduced from 120000
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  connectTimeoutMS: 10000
 })
   .then(() => console.log('Connected to Azure Cosmos DB'))
   .catch(err => {
@@ -172,6 +182,12 @@ app.delete('/api/events/:id', async function(request, response) {
 app.get('/test', function(request, response) {
   response.type('text/plain');
   response.send('Node.js and Express running on port='+port);
+});
+
+// Add global error handler before app.listen
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something went wrong!' });
 });
 
 app.listen(port, function() {
