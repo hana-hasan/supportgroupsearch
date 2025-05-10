@@ -122,10 +122,18 @@
             <div class="form-group">
                 <label for="event-tags">Tags</label>
                 <div class="tags-input-container">
-                    <input type="text" id="event-tags" placeholder="Enter tags (comma-separated, e.g., AA, Bereavement)">
-                    <div id="tags-preview" class="tags-preview"></div>
+                    <div class="existing-tags">
+                        <label>Select Existing Tags:</label>
+                        <div id="existing-tags-list" class="tags-list"></div>
+                    </div>
+                    <div class="new-tag-input">
+                        <label for="new-tag">Add New Tag:</label>
+                        <input type="text" id="new-tag" placeholder="Enter new tag">
+                        <button type="button" id="add-tag-btn">Add Tag</button>
+                    </div>
+                    <div id="selected-tags" class="tags-preview"></div>
                 </div>
-                <small class="help-text">Add tags to help others find your event (e.g., AA, Bereavement, Grief Support)</small>
+                <small class="help-text">Select existing tags or create new ones to help others find your event</small>
             </div>
             
             <button type="submit">Create Event</button>
@@ -148,8 +156,6 @@
         const eventTimeInput = document.getElementById('event-time');
         const timePeriodSelect = document.getElementById('time-period');
         const timezoneSelect = document.getElementById('timezone');
-        const eventTagsInput = document.getElementById('event-tags');
-        const tagsPreview = document.getElementById('tags-preview');
         const formError = document.getElementById('form-error');
 
         // Set minimum date to tomorrow
@@ -158,16 +164,95 @@
         const tomorrowFormatted = tomorrow.toISOString().split('T')[0];
         eventDateInput.min = tomorrowFormatted;
 
-        // Handle tags input
-        eventTagsInput.addEventListener('input', function() {
-            const tags = this.value.split(',').map(tag => tag.trim()).filter(tag => tag);
-            tagsPreview.innerHTML = tags.map(tag => 
-                `<span class="tag">${tag}</span>`
-            ).join('');
+        // Tag management
+        const existingTagsList = document.getElementById('existing-tags-list');
+        const newTagInput = document.getElementById('new-tag');
+        const addTagBtn = document.getElementById('add-tag-btn');
+        const selectedTags = document.getElementById('selected-tags');
+        let selectedTagsSet = new Set();
+
+        // Load existing tags
+        async function loadExistingTags() {
+            try {
+                const response = await fetch('/api/tags');
+                const tags = await response.json();
+                existingTagsList.innerHTML = tags.map(tag => `
+                    <button type="button" class="tag-btn" data-tag="${tag.name}">${tag.name}</button>
+                `).join('');
+
+                // Add click handlers to tag buttons
+                document.querySelectorAll('.tag-btn').forEach(btn => {
+                    btn.addEventListener('click', () => toggleTag(btn.dataset.tag));
+                });
+            } catch (error) {
+                console.error('Error loading tags:', error);
+            }
+        }
+
+        // Toggle tag selection
+        function toggleTag(tagName) {
+            if (selectedTagsSet.has(tagName)) {
+                selectedTagsSet.delete(tagName);
+            } else {
+                selectedTagsSet.add(tagName);
+            }
+            updateSelectedTagsDisplay();
+        }
+
+        // Update selected tags display
+        function updateSelectedTagsDisplay() {
+            selectedTags.innerHTML = Array.from(selectedTagsSet).map(tag => `
+                <span class="tag">
+                    ${tag}
+                    <button type="button" class="remove-tag" onclick="toggleTag('${tag}')">&times;</button>
+                </span>
+            `).join('');
+        }
+
+        // Add new tag
+        async function addNewTag() {
+            const tagName = newTagInput.value.trim();
+            if (!tagName) return;
+
+            try {
+                const response = await fetch('/api/tags', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: tagName })
+                });
+
+                if (response.ok) {
+                    selectedTagsSet.add(tagName);
+                    updateSelectedTagsDisplay();
+                    newTagInput.value = '';
+                    loadExistingTags(); // Reload tags to include the new one
+                } else {
+                    const data = await response.json();
+                    if (data.message === 'Tag already exists') {
+                        toggleTag(tagName);
+                    }
+                }
+            } catch (error) {
+                console.error('Error adding tag:', error);
+            }
+        }
+
+        // Event listeners for tag management
+        addTagBtn.addEventListener('click', addNewTag);
+        newTagInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addNewTag();
+            }
         });
 
+        // Load tags when page loads
+        loadExistingTags();
+
         // Handle form submission
-        eventForm.addEventListener('submit', function(e) {
+        eventForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const name = eventNameInput.value.trim();
@@ -212,44 +297,39 @@
             const [hours, minutes] = time.split(':');
             const formattedTime = `${hours}:${minutes} ${period} ${timezone}`;
 
-            // Process tags
-            const tags = eventTagsInput.value.split(',')
-                .map(tag => tag.trim())
-                .filter(tag => tag);
+            const tags = Array.from(selectedTagsSet);
+            
+            const eventData = {
+                name,
+                description,
+                date,
+                address,
+                zipCode: zip,
+                time: `${eventTimeInput.value} ${timePeriodSelect.value} ${timezoneSelect.value}`,
+                timeRange: getTimeRange(eventTimeInput.value, timePeriodSelect.value),
+                tags
+            };
 
-            createEvent(name, description, address, formattedTime, date, tags);
-        });
-
-        // Create a new event
-        async function createEvent(name, description, address, time, date, tags) {
             try {
                 const response = await fetch('/api/events', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ 
-                        name, 
-                        description, 
-                        address, 
-                        time, 
-                        date,
-                        tags,
-                        zipCode: document.getElementById('zip').value
-                    })
+                    body: JSON.stringify(eventData)
                 });
 
-                if (!response.ok) {
-                    throw new Error('Failed to create event');
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    const data = await response.json();
+                    formError.textContent = data.message || 'Error creating event';
                 }
-
-                // Redirect back to the home page after successful creation
-                window.location.href = '/';
             } catch (error) {
                 console.error('Error creating event:', error);
-                formError.textContent = 'Failed to create event. Please try again.';
+                formError.textContent = 'Error creating event. Please try again.';
             }
-        }
+        });
     </script>
 </body>
 </html> 

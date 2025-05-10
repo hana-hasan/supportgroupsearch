@@ -154,4 +154,17 @@ class EventFilter {
 let eventFilter;
 document.addEventListener('DOMContentLoaded', () => {
     eventFilter = new EventFilter();
+});
+
+// Add filter toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const filterToggle = document.getElementById('filterToggle');
+    const filterSection = document.getElementById('filterSection');
+
+    filterToggle.addEventListener('click', function() {
+        const isVisible = filterSection.style.display !== 'none';
+        filterSection.style.display = isVisible ? 'none' : 'block';
+        filterToggle.classList.toggle('active');
+        filterToggle.textContent = isVisible ? 'Filters' : 'Hide Filters';
+    });
 }); 

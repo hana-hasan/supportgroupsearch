@@ -8,7 +8,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/client'));
 
 // MongoDB connection - Azure Cosmos DB
-const mongoURI = process.env.MONGODB_URI || "mongodb+srv://hanah:Password123!@capstone-cluster.global.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000";
+const mongoURI = process.env.MONGODB_URI || "YOUR_NEW_CONNECTION_STRING_HERE";
 
 // Connect to MongoDB with proper options
 mongoose.connect(mongoURI, {
@@ -40,6 +40,13 @@ const eventSchema = new mongoose.Schema({
 });
 
 const Event = mongoose.model('Event', eventSchema);
+
+// Create a Tag schema and model
+const tagSchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true }
+});
+
+const Tag = mongoose.model('Tag', tagSchema);
 
 const port = process.env.PORT || 3000;
 
@@ -89,6 +96,17 @@ app.get('/api/events', async function(request, response) {
   }
 });
 
+// Route to get all tags
+app.get('/api/tags', async function(request, response) {
+  try {
+    const tags = await Tag.find().sort({ name: 1 });
+    response.json(tags);
+  } catch (err) {
+    console.error('Error fetching tags:', err);
+    response.status(500).json({ message: 'Error fetching tags' });
+  }
+});
+
 // Route to serve the create event page
 app.get('/create-event.html', function(request, response) {
   response.sendFile(__dirname + '/client/create-event.html');
@@ -113,6 +131,25 @@ app.post('/api/events', async function(request, response) {
   } catch (err) {
     console.error('Error creating event:', err);
     response.status(500).json({ message: 'Error creating event' });
+  }
+});
+
+// Route to create a new tag
+app.post('/api/tags', async function(request, response) {
+  try {
+    const { name } = request.body;
+    const existingTag = await Tag.findOne({ name });
+    
+    if (existingTag) {
+      return response.status(400).json({ message: 'Tag already exists' });
+    }
+    
+    const newTag = new Tag({ name });
+    const savedTag = await newTag.save();
+    response.status(201).json(savedTag);
+  } catch (err) {
+    console.error('Error creating tag:', err);
+    response.status(500).json({ message: 'Error creating tag' });
   }
 });
 

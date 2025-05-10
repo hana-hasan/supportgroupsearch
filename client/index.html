@@ -82,9 +82,9 @@
 		
 		<a href="/create-event.html" class="create-button">Create New Event</a>
 		
-		<!-- Filter Form -->
-		<div class="filter-section">
-			<h2>Filter Events</h2>
+		<!-- Filter Button and Section -->
+		<button id="filterToggle" class="filter-toggle-button">Filters</button>
+		<div class="filter-section" id="filterSection" style="display: none;">
 			<form id="filterForm" class="filter-form">
 				<div class="form-group">
 					<label for="startDate">Start Date:</label>
@@ -102,8 +102,11 @@
 				</div>
 				
 				<div class="form-group">
-					<label for="tags">Tags (comma-separated):</label>
-					<input type="text" id="tags" name="tags" placeholder="AA, Bereavement, etc.">
+					<label for="tags">Tags:</label>
+					<div class="tags-input-container">
+						<div id="filter-tags-list" class="tags-list"></div>
+						<div id="selected-filter-tags" class="tags-preview"></div>
+					</div>
 				</div>
 				
 				<button type="submit" class="filter-button">Apply Filters</button>
@@ -220,6 +223,97 @@
 			link.click();
 			document.body.removeChild(link);
 		}
+
+		// Tag management for filters
+		const filterTagsList = document.getElementById('filter-tags-list');
+		const selectedFilterTags = document.getElementById('selected-filter-tags');
+		let selectedFilterTagsSet = new Set();
+
+		// Load existing tags for filter
+		async function loadFilterTags() {
+			try {
+				const response = await fetch('/api/tags');
+				const tags = await response.json();
+				filterTagsList.innerHTML = tags.map(tag => `
+					<button type="button" class="tag-btn" data-tag="${tag.name}">${tag.name}</button>
+				`).join('');
+
+				// Add click handlers to tag buttons
+				document.querySelectorAll('.tag-btn').forEach(btn => {
+					btn.addEventListener('click', () => toggleFilterTag(btn.dataset.tag));
+				});
+			} catch (error) {
+				console.error('Error loading tags:', error);
+			}
+		}
+
+		// Toggle filter tag selection
+		function toggleFilterTag(tagName) {
+			if (selectedFilterTagsSet.has(tagName)) {
+				selectedFilterTagsSet.delete(tagName);
+			} else {
+				selectedFilterTagsSet.add(tagName);
+			}
+			updateSelectedFilterTagsDisplay();
+		}
+
+		// Update selected filter tags display
+		function updateSelectedFilterTagsDisplay() {
+			selectedFilterTags.innerHTML = Array.from(selectedFilterTagsSet).map(tag => `
+				<span class="tag">
+					${tag}
+					<button type="button" class="remove-tag" onclick="toggleFilterTag('${tag}')">&times;</button>
+				</span>
+			`).join('');
+		}
+
+		// Load tags when page loads
+		document.addEventListener('DOMContentLoaded', () => {
+			loadFilterTags();
+		});
+
+		// Modify filter form submission
+		document.getElementById('filterForm').addEventListener('submit', function(e) {
+			e.preventDefault();
+			const formData = new FormData(this);
+			const params = new URLSearchParams();
+
+			// Add date range
+			if (formData.get('startDate')) {
+				params.append('startDate', formData.get('startDate'));
+			}
+			if (formData.get('endDate')) {
+				params.append('endDate', formData.get('endDate'));
+			}
+
+			// Add zip code
+			if (formData.get('zipCode')) {
+				params.append('zipCode', formData.get('zipCode'));
+			}
+
+			// Add selected tags
+			if (selectedFilterTagsSet.size > 0) {
+				params.append('tags', Array.from(selectedFilterTagsSet).join(','));
+			}
+
+			// Fetch filtered events
+			fetch(`/api/events?${params.toString()}`)
+				.then(response => response.json())
+				.then(events => {
+					displayEvents(events);
+				})
+				.catch(error => {
+					console.error('Error fetching filtered events:', error);
+					alert('Error fetching events. Please try again.');
+				});
+		});
+
+		// Reset filter form
+		document.getElementById('filterForm').addEventListener('reset', function() {
+			selectedFilterTagsSet.clear();
+			updateSelectedFilterTagsDisplay();
+			fetchEvents();
+		});
 	</script>
 </body>
 </html>
