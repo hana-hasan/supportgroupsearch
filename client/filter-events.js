@@ -2,8 +2,10 @@ class EventFilter {
     constructor() {
         this.filterForm = document.getElementById('filterForm');
         this.eventsContainer = document.getElementById('eventsContainer');
+        this.selectedFilterTags = new Set();
         this.setupEventListeners();
         this.loadAllEvents(); // Load all events when page loads
+        this.loadTags(); // Load available tags for filtering
     }
 
     setupEventListeners() {
@@ -14,6 +16,8 @@ class EventFilter {
 
         // Add reset handler to load all events when filters are reset
         this.filterForm.addEventListener('reset', () => {
+            this.selectedFilterTags.clear();
+            this.updateSelectedFilterTags();
             setTimeout(() => this.loadAllEvents(), 0);
         });
     }
@@ -26,6 +30,54 @@ class EventFilter {
         } catch (error) {
             console.error('Error fetching events:', error);
             this.eventsContainer.innerHTML = '<p class="no-events">Failed to load events. Please try again later.</p>';
+        }
+    }
+
+    async loadTags() {
+        try {
+            const response = await fetch('/api/tags');
+            const tags = await response.json();
+            const tagsContainer = document.getElementById('filter-tags-list');
+            
+            if (tagsContainer) {
+                tagsContainer.innerHTML = tags.map(tag => `
+                    <button type="button" 
+                        onclick="eventFilter.toggleFilterTag('${tag.name}')"
+                        class="px-4 py-2 bg-light text-primary rounded-lg hover:bg-gray-100 transition-all duration-200 font-actor ${
+                            this.selectedFilterTags.has(tag.name) ? 'bg-secondary bg-opacity-10' : ''
+                        }">
+                        ${tag.name}
+                    </button>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading tags:', error);
+        }
+    }
+
+    toggleFilterTag(tagName) {
+        if (this.selectedFilterTags.has(tagName)) {
+            this.selectedFilterTags.delete(tagName);
+        } else {
+            this.selectedFilterTags.add(tagName);
+        }
+        this.updateSelectedFilterTags();
+        this.applyFilters();
+    }
+
+    updateSelectedFilterTags() {
+        const selectedTagsContainer = document.getElementById('selected-filter-tags');
+        if (selectedTagsContainer) {
+            selectedTagsContainer.innerHTML = Array.from(this.selectedFilterTags).map(tag => `
+                <span class="inline-flex items-center px-4 py-2 bg-secondary bg-opacity-10 text-secondary rounded-lg font-actor">
+                    ${tag}
+                    <button type="button" 
+                        class="ml-2 text-secondary hover:text-opacity-80 transition-all duration-200"
+                        onclick="eventFilter.toggleFilterTag('${tag}')">
+                        ×
+                    </button>
+                </span>
+            `).join('');
         }
     }
 
@@ -46,10 +98,9 @@ class EventFilter {
             params.append('zipCode', formData.get('zipCode'));
         }
 
-        // Add tags
-        const tags = formData.get('tags');
-        if (tags) {
-            params.append('tags', tags);
+        // Add selected tags
+        if (this.selectedFilterTags.size > 0) {
+            params.append('tags', Array.from(this.selectedFilterTags).join(','));
         }
 
         try {

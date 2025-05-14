@@ -89,12 +89,25 @@
 
             <div>
                 <label class="block text-sm font-forum text-primary mb-2">Tags:</label>
-                <div class="tags-input-container">
-                    <div id="tags-list" class="flex flex-wrap gap-2 mb-3">
-                        <!-- Tag buttons will be styled with Tailwind classes -->
+                <div class="tags-input-container space-y-4">
+                    <!-- New tag input -->
+                    <div class="relative">
+                        <input type="text" id="newTagInput" 
+                            placeholder="Add tags separated by comma"
+                            class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent font-actor">
                     </div>
+                    
+                    <!-- Selected tags display -->
                     <div id="selected-tags" class="flex flex-wrap gap-2">
-                        <!-- Selected tags will be styled with Tailwind classes -->
+                        <!-- Selected tags will be displayed here -->
+                    </div>
+
+                    <!-- Available tags section -->
+                    <div>
+                        <p class="text-sm font-forum text-primary mb-2">Or choose from existing tags:</p>
+                        <div id="tags-list" class="flex flex-wrap gap-2 mb-3">
+                            <!-- Existing tags will be displayed here -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -118,6 +131,7 @@
         const tagsList = document.getElementById('tags-list');
         const selectedTags = document.getElementById('selected-tags');
         const eventForm = document.getElementById('eventForm');
+        const newTagInput = document.getElementById('newTagInput');
 
         // Populate hours in the time selector
         const hourSelect = document.getElementById('eventHour');
@@ -127,6 +141,37 @@
             option.textContent = i.toString().padStart(2, '0');
             hourSelect.appendChild(option);
         }
+
+        // Handle new tag input
+        newTagInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                const tags = newTagInput.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+                tags.forEach(async (tag) => {
+                    if (tag && !selectedTagsSet.has(tag)) {
+                        // Try to create the new tag on the server
+                        try {
+                            const response = await fetch('/api/tags', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ name: tag })
+                            });
+                            
+                            if (response.ok) {
+                                selectedTagsSet.add(tag);
+                                updateSelectedTagsDisplay();
+                                loadTags(); // Refresh the available tags list
+                            }
+                        } catch (error) {
+                            console.error('Error creating new tag:', error);
+                        }
+                    }
+                });
+                newTagInput.value = '';
+            }
+        });
 
         function toggleTag(tagName) {
             if (selectedTagsSet.has(tagName)) {
@@ -144,7 +189,7 @@
                     <button type="button" 
                         class="ml-2 text-secondary hover:text-opacity-80 transition-all duration-200"
                         onclick="toggleTag('${tag}')">
-                        &times;
+                        ×
                     </button>
                 </span>
             `).join('');
@@ -157,7 +202,9 @@
                 tagsList.innerHTML = tags.map(tag => `
                     <button type="button" 
                         onclick="toggleTag('${tag.name}')"
-                        class="px-4 py-2 bg-light text-primary rounded-lg hover:bg-gray-100 transition-all duration-200 font-actor">
+                        class="px-4 py-2 bg-light text-primary rounded-lg hover:bg-gray-100 transition-all duration-200 font-actor ${
+                            selectedTagsSet.has(tag.name) ? 'bg-secondary bg-opacity-10' : ''
+                        }">
                         ${tag.name}
                     </button>
                 `).join('');
