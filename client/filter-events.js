@@ -42,10 +42,11 @@ class EventFilter {
             if (tagsContainer) {
                 tagsContainer.innerHTML = tags.map(tag => `
                     <button type="button" 
-                        onclick="eventFilter.toggleFilterTag('${tag.name}')"
-                        class="px-4 py-2 bg-light text-primary rounded-lg hover:bg-gray-100 transition-all duration-200 font-actor ${
+                        class="tag-btn px-4 py-2 bg-light text-primary rounded-lg hover:bg-gray-100 transition-all duration-200 font-actor ${
                             this.selectedFilterTags.has(tag.name) ? 'bg-secondary bg-opacity-10' : ''
-                        }">
+                        }"
+                        onclick="eventFilter.toggleFilterTag('${tag.name}')"
+                        data-tag="${tag.name}">
                         ${tag.name}
                     </button>
                 `).join('');
@@ -62,7 +63,8 @@ class EventFilter {
             this.selectedFilterTags.add(tagName);
         }
         this.updateSelectedFilterTags();
-        this.applyFilters();
+        this.loadTags(); // Refresh the tag buttons to update their appearance
+        this.applyFilters(); // Automatically apply filters when a tag is toggled
     }
 
     updateSelectedFilterTags() {
@@ -73,7 +75,8 @@ class EventFilter {
                     ${tag}
                     <button type="button" 
                         class="ml-2 text-secondary hover:text-opacity-80 transition-all duration-200"
-                        onclick="eventFilter.toggleFilterTag('${tag}')">
+                        onclick="eventFilter.toggleFilterTag('${tag}')"
+                        aria-label="Remove ${tag} tag">
                         ×
                     </button>
                 </span>
@@ -114,17 +117,13 @@ class EventFilter {
     }
 
     displayEvents(events) {
-        this.eventsContainer.innerHTML = '';
-        
         if (events.length === 0) {
             this.eventsContainer.innerHTML = '<p class="no-events">No events found matching your criteria.</p>';
             return;
         }
 
-        events.forEach(event => {
-            const eventElement = document.createElement('div');
-            eventElement.className = 'event-card';
-            eventElement.innerHTML = `
+        this.eventsContainer.innerHTML = events.map(event => `
+            <div class="event-card">
                 <h3>${event.name}</h3>
                 <p class="description">${event.description}</p>
                 <p class="details">
@@ -137,9 +136,8 @@ class EventFilter {
                     <button class="ical-btn" onclick="eventFilter.downloadICS('${event._id}', '${event.name}', '${event.description}', '${event.address}', '${event.date}', '${event.time}')">Add to iCal</button>
                     <button class="delete-btn" onclick="eventFilter.deleteEvent('${event._id}')">Delete</button>
                 </div>
-            `;
-            this.eventsContainer.appendChild(eventElement);
-        });
+            </div>
+        `).join('');
     }
 
     async deleteEvent(id) {
@@ -168,7 +166,7 @@ class EventFilter {
         // Format date and time for ICS
         const [year, month, day] = date.split('-');
         const [hours, minutes] = time.split(':');
-        const [timeValue, period, timezone] = time.split(' ');
+        const [timeValue, period] = time.split(' ');
         
         // Convert to 24-hour format
         let hour24 = parseInt(hours);
