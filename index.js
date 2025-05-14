@@ -44,11 +44,6 @@ const eventSchema = new mongoose.Schema({
   zipCode: { type: String, required: true },
   time: { type: String, required: true },
   date: { type: String, required: true },
-  timeRange: { 
-    type: String, 
-    required: true,
-    enum: ['morning', 'afternoon', 'evening']
-  },
   tags: [{ type: String }]
 });
 
@@ -70,7 +65,6 @@ app.get('/api/events', async function(request, response) {
       startDate, 
       endDate, 
       zipCode, 
-      timeRange, 
       tags 
     } = request.query;
 
@@ -88,11 +82,6 @@ app.get('/api/events', async function(request, response) {
     // Zip code filter
     if (zipCode) {
       filter.zipCode = zipCode;
-    }
-
-    // Time range filter
-    if (timeRange) {
-      filter.timeRange = timeRange;
     }
 
     // Tags filter
@@ -131,7 +120,7 @@ app.post('/api/events', async function(request, response) {
     console.log('Received event creation request:', request.body); // Debug log
     
     // Validate required fields
-    const requiredFields = ['name', 'description', 'address', 'zipCode', 'time', 'date', 'timeRange'];
+    const requiredFields = ['name', 'description', 'address', 'zipCode', 'time', 'date'];
     const missingFields = requiredFields.filter(field => !request.body[field]);
     
     if (missingFields.length > 0) {
@@ -148,7 +137,6 @@ app.post('/api/events', async function(request, response) {
       zipCode: request.body.zipCode,
       time: request.body.time,
       date: request.body.date,
-      timeRange: request.body.timeRange,
       tags: request.body.tags || []
     });
     
