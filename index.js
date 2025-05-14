@@ -40,8 +40,12 @@ mongoose.connect(mongoURI, {
 const eventSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String, required: true },
-  address: { type: String, required: true },
-  zipCode: { type: String, required: true },
+  location: {
+    street: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    zipCode: { type: String, required: true }
+  },
   time: { type: String, required: true },
   date: { type: String, required: true },
   tags: [{ type: String }]
@@ -81,7 +85,7 @@ app.get('/api/events', async function(request, response) {
 
     // Zip code filter
     if (zipCode) {
-      filter.zipCode = zipCode;
+      filter['location.zipCode'] = zipCode;
     }
 
     // Tags filter
@@ -120,8 +124,20 @@ app.post('/api/events', async function(request, response) {
     console.log('Received event creation request:', request.body); // Debug log
     
     // Validate required fields
-    const requiredFields = ['name', 'description', 'address', 'zipCode', 'time', 'date'];
+    const requiredFields = ['name', 'description', 'time', 'date'];
     const missingFields = requiredFields.filter(field => !request.body[field]);
+    
+    // Validate location fields
+    if (!request.body.location) {
+      missingFields.push('location');
+    } else {
+      const requiredLocationFields = ['street', 'city', 'state', 'zipCode'];
+      requiredLocationFields.forEach(field => {
+        if (!request.body.location[field]) {
+          missingFields.push(`location.${field}`);
+        }
+      });
+    }
     
     if (missingFields.length > 0) {
       console.error('Missing required fields:', missingFields);
@@ -133,8 +149,12 @@ app.post('/api/events', async function(request, response) {
     const newEvent = new Event({
       name: request.body.name,
       description: request.body.description,
-      address: request.body.address,
-      zipCode: request.body.zipCode,
+      location: {
+        street: request.body.location.street,
+        city: request.body.location.city,
+        state: request.body.location.state,
+        zipCode: request.body.location.zipCode
+      },
       time: request.body.time,
       date: request.body.date,
       tags: request.body.tags || []

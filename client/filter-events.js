@@ -118,26 +118,45 @@ class EventFilter {
 
     displayEvents(events) {
         if (events.length === 0) {
-            this.eventsContainer.innerHTML = '<p class="no-events">No events found matching your criteria.</p>';
+            this.eventsContainer.innerHTML = '<p class="text-gray-500 text-center py-8 text-lg font-actor">No events found matching your criteria.</p>';
             return;
         }
 
-        this.eventsContainer.innerHTML = events.map(event => `
-            <div class="event-card">
-                <h3>${event.name}</h3>
-                <p class="description">${event.description}</p>
-                <p class="details">
-                    <strong>Date:</strong> ${event.date}<br>
-                    <strong>Time:</strong> ${event.time}<br>
-                    <strong>Location:</strong> ${event.address}, ${event.zipCode}<br>
-                    <strong>Tags:</strong> ${event.tags ? event.tags.join(', ') : 'No tags'}
-                </p>
-                <div class="event-actions">
-                    <button class="ical-btn" onclick="eventFilter.downloadICS('${event._id}', '${event.name}', '${event.description}', '${event.address}', '${event.date}', '${event.time}')">Add to iCal</button>
-                    <button class="delete-btn" onclick="eventFilter.deleteEvent('${event._id}')">Delete</button>
+        this.eventsContainer.innerHTML = events.map(event => {
+            // Format the address
+            let formattedLocation = 'No location provided';
+            if (event.location) {
+                formattedLocation = `${event.location.street}, ${event.location.city}, ${event.location.state} ${event.location.zipCode}`;
+            } else if (event.address) {
+                // Handle legacy data format
+                formattedLocation = event.address + (event.zipCode ? `, ${event.zipCode}` : '');
+            }
+            
+            return `
+                <div class="bg-white rounded-xl shadow-lg p-8 relative" data-id="${event._id}">
+                    <h3 class="text-2xl font-forum font-bold text-primary mb-4">${event.name}</h3>
+                    <div class="space-y-3 text-gray-600 font-actor">
+                        <p><span class="font-forum text-primary">Description:</span> ${event.description || 'No description provided'}</p>
+                        <p><span class="font-forum text-primary">Location:</span> ${formattedLocation}</p>
+                        <p><span class="font-forum text-primary">Time:</span> ${event.time || 'No time provided'}</p>
+                        <p><span class="font-forum text-primary">Date:</span> ${event.date || 'No date provided'}</p>
+                        ${event.tags && event.tags.length > 0 ? 
+                            `<p><span class="font-forum text-primary">Tags:</span> ${event.tags.join(', ')}</p>` : 
+                            ''}
+                    </div>
+                    <div class="absolute top-6 right-6 space-x-3">
+                        <button class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-opacity-90 transition-all duration-200 font-actor shadow-sm"
+                            onclick="eventFilter.downloadICS('${event._id}', '${event.name}', '${event.description}', '${formattedLocation}', '${event.date}', '${event.time}')">
+                            Add to iCal
+                        </button>
+                        <button class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-opacity-90 transition-all duration-200 font-actor shadow-sm"
+                            onclick="eventFilter.deleteEvent('${event._id}')">
+                            Delete
+                        </button>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     async deleteEvent(id) {
@@ -162,7 +181,7 @@ class EventFilter {
         }
     }
 
-    downloadICS(id, name, description, address, date, time) {
+    downloadICS(id, name, description, location, date, time) {
         // Format date and time for ICS
         const [year, month, day] = date.split('-');
         const [hours, minutes] = time.split(':');
@@ -183,7 +202,7 @@ class EventFilter {
             `DTEND:${year}${month}${day}T${(hour24 + 1).toString().padStart(2, '0')}${minutes}00`,
             `SUMMARY:${name}`,
             `DESCRIPTION:${description}`,
-            `LOCATION:${address}`,
+            `LOCATION:${location}`,
             'END:VEVENT',
             'END:VCALENDAR'
         ].join('\r\n');
